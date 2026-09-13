@@ -17,8 +17,9 @@ if grep -Eq "^[[:space:]]*activeTheme[[:space:]]*=[[:space:]]*\"$theme_name\"[[:
     exit 0
 fi
 
-# 1) An activeTheme line exists (anywhere, once): replace only its quoted
-#    value, so leading whitespace and any trailing comment survive. Handles
+# 1) An activeTheme line exists (anywhere, once): rewrite the whole
+#    assignment as activeTheme = "Noctalia", keeping any trailing
+#    comment; indentation and spacing around the key are normalized. Handles
 #    double- and single-quoted values. awk is used (not sed) because sed's
 #    '0,/re/' range and '\s' are GNU extensions that fail on BSD/macOS and
 #    busybox; awk patterns use POSIX [[:space:]]. Write through the existing
@@ -27,8 +28,8 @@ if grep -Eq '^[[:space:]]*activeTheme[[:space:]]*=' "$config_file"; then
     tmp_file="$(mktemp "${config_file}.tmp.XXXXXX")"
     awk -v theme="$theme_name" -v q="'" '
         /^[[:space:]]*activeTheme[[:space:]]*=/ && !done {
-            sub(/"[^"]*"/, "\"" theme "\"")
-            sub(q "[^" q "]*" q, "\"" theme "\"")
+            sub(/^[[:space:]]*activeTheme[[:space:]]*=[[:space:]]*"[^"]*"/, "activeTheme = \"" theme "\"")
+            sub("^[[:space:]]*activeTheme[[:space:]]*=[[:space:]]*" q "[^" q "]*" q, "activeTheme = \"" theme "\"")
             print
             done = 1
             next
