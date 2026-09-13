@@ -7,26 +7,53 @@ theme_name="Noctalia"
 
 # Nothing to patch until musicfox has written its config (run musicfox once).
 # The theme file is still rendered; it activates on the next theme change.
-[ -f "$config_file" ] || exit 0
-
-# Idempotent: already selected.
-if grep -Eq '^\s*activeTheme\s*=\s*"Noctalia"\s*$' "$config_file"; then
+if [ ! -f "$config_file" ]; then
+    echo "musicfox: config.toml not found at $config_file; run musicfox once" >&2
     exit 0
 fi
 
-# 1) An activeTheme line exists (anywhere, once): replace its value only.
-if grep -Eq '^\s*activeTheme\s*=' "$config_file"; then
-    sed -i -E '0,/^\s*activeTheme\s*=.*$/s//activeTheme = "Noctalia"/' "$config_file"
+# Idempotent: already selected. A trailing comment after the value is fine.
+if grep -Eq "^[[:space:]]*activeTheme[[:space:]]*=[[:space:]]*\"$theme_name\"[[:space:]]*(#.*)?$" "$config_file"; then
     exit 0
 fi
 
-# 2) No activeTheme key, but a [theme] section: insert the key right after it.
-if grep -q '^\s*\[theme\]' "$config_file"; then
-    awk -v line="activeTheme = \"$theme_name\"" '
-        /^\s*\[theme\]/ && !done { print; print line; done = 1; next }
+# 1) An activeTheme line exists (anywhere, once): replace only its quoted
+#    value, so leading whitespace and any trailing comment survive. Handles
+#    double- and single-quoted values. awk is used (not sed) because sed's
+#    '0,/re/' range and '\s' are GNU extensions that fail on BSD/macOS and
+#    busybox; awk patterns use POSIX [[:space:]]. Write through the existing
+#    file so symlinks, permissions, and inode survive.
+if grep -Eq '^[[:space:]]*activeTheme[[:space:]]*=' "$config_file"; then
+    tmp_file="$(mktemp "${config_file}.tmp.XXXXXX")"
+    awk -v theme="$theme_name" -v q="'" '
+        /^[[:space:]]*activeTheme[[:space:]]*=/ && !done {
+            sub(/"[^"]*"/, "\"" theme "\"")
+            sub(q "[^" q "]*" q, "\"" theme "\"")
+            print
+            done = 1
+            next
+        }
         { print }
-    ' "$config_file" > "$config_file.tmp"
-    mv "$config_file.tmp" "$config_file"
+    ' "$config_file" > "$tmp_file"
+    cat "$tmp_file" > "$config_file"
+    rm -f "$tmp_file"
+    exit 0
+fi
+
+# 2) No activeTheme key, but a [theme] section: insert the key after the
+#    header's leading comment/blank lines, before the first real setting.
+if grep -q '^[[:space:]]*\[theme\]' "$config_file"; then
+    tmp_file="$(mktemp "${config_file}.tmp.XXXXXX")"
+    awk -v line="activeTheme = \"$theme_name\"" '
+        /^[[:space:]]*\[theme\]/ && !done { print; done = 1; in_section = 1; next }
+        in_section && /^[[:space:]]*#/ { print; next }
+        in_section && /^[[:space:]]*$/ { print; next }
+        in_section { print line; in_section = 0 }
+        { print }
+        END { if (in_section) print line }
+    ' "$config_file" > "$tmp_file"
+    cat "$tmp_file" > "$config_file"
+    rm -f "$tmp_file"
     exit 0
 fi
 
