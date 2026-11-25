@@ -374,7 +374,7 @@ body {
   --text-code: var(--text-2) !important;
   --text-code-variable: var(--text-2) !important;
   --text-code-operator: var(--text-3) !important;
-  --text-code-comment: color-mix(in srgb, var(--text-1) 70%, var(--bg-2)) !important;
+  --text-code-comment: color-mix(in srgb, var(--text-1) 80%, transparent) !important;
   --text-code-keyword: color-mix(in srgb, var(--accent-1) 75%, var(--text-1)) !important;
   --text-code-section: color-mix(in srgb, var(--accent-1) 75%, var(--text-1)) !important;
   --text-code-link: color-mix(in srgb, var(--accent-1) 75%, var(--text-1)) !important;

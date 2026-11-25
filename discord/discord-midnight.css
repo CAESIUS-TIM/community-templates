@@ -156,12 +156,15 @@ body {
 /* Code syntax colors. Discord's --text-code-* defaults are dark-theme pastels
    that lose contrast on Noctalia's light surfaces. Declare them on body (and
    importantly) so they win whether Discord puts the theme class on html or
-   body. Mixing with --text-1 keeps both light and dark palettes legible. */
+   body. Mixing with --text-1 keeps both light and dark palettes legible.
+   Comments fade toward transparent instead of a guessed background color, so
+   they composite over whatever code surface is actually painted (--bg-3 here,
+   or any other palette/surface combination). */
 body {
   --text-code: var(--text-3) !important;
   --text-code-variable: var(--text-3) !important;
   --text-code-operator: var(--text-3) !important;
-  --text-code-comment: color-mix(in srgb, var(--text-3) 75%, var(--bg-4)) !important;
+  --text-code-comment: color-mix(in srgb, var(--text-code) 80%, transparent) !important;
   --text-code-keyword: var(--accent-1) !important;
   --text-code-section: var(--accent-1) !important;
   --text-code-link: var(--accent-1) !important;
